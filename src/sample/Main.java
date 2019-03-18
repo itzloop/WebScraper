@@ -1,9 +1,7 @@
 package sample;
 
 import javafx.application.Application;
-import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
@@ -11,15 +9,15 @@ import javafx.scene.control.Button;
 import javafx.scene.Scene;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
+import javafx.scene.control.Hyperlink;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import javafx.scene.control.Label;
-import javafx.scene.text.Text;
-import javafx.scene.control.TextField;
-
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Main extends Application {
@@ -30,17 +28,18 @@ public class Main extends Application {
        Button btnSearch = new Button("Search");
        btnSearch.setDisable(true);
        Button btnSave = new Button("Save");
+       Label lblProgress = new Label("Done.");
        TextField txtSearchWord = new TextField() ;
-       //b1.setTranslateX(1530);
-//       b1.setTranslateY(350);
-       VBox texts = new VBox();
-       ScrollPane scrollPane = new ScrollPane(texts);
+       GridPane gridPane = new GridPane();
+       ScrollPane scrollPane = new ScrollPane(gridPane);
        BorderPane root = new BorderPane(scrollPane);
-       HBox buttons = new HBox();
-       buttons.getChildren().addAll(txtSearchWord,btnSearch, btnSave);
+       HBox toolBar = new HBox();
+       toolBar.getChildren().addAll(txtSearchWord,btnSearch, btnSave , lblProgress);
        root.setLayoutX(0);
        root.setLayoutY(0);
-       root.setBottom(buttons);
+       root.setBottom(toolBar);
+
+
        txtSearchWord.setOnKeyTyped(new EventHandler<KeyEvent>() {
            @Override
            public void handle(KeyEvent keyEvent) {
@@ -51,30 +50,44 @@ public class Main extends Application {
 
            }
        });
+
+
        btnSearch.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
-                texts.getChildren().clear();
+                gridPane.getChildren().clear();
                 String searchWord = txtSearchWord.getText();
-                int x = -500 , y = -500;
                 try {
                     Document doc = Jsoup.connect("https://www.imdb.com/find?q=" + searchWord +"&s=tt").get();
-                    //System.out.println(doc.title());
-                    Elements titles = doc.select(".findList tr td:nth-of-type(2) a");
-                    Text t;
+                    Elements titles = doc.select(".findList tr");
+                    Hyperlink link;
+                    ImageView image;
+                    int i = 0;
+                    lblProgress.setText("Searching...");
                     for ( Element title : titles) {
-                        t = new Text(title.text());
-                        texts.getChildren().addAll(t);
+
+                        link = new Hyperlink(title.select("td:nth-of-type(2) a").text() + title.text());
+                        image = new ImageView(new Image(title.select("td:nth-of-type(1) img").attr("src")));
+                        //System.out.println(title.select("td:nth-of-type(1) img").attr("src"));
+                        link.setOnAction(actionEvent1 -> getHostServices().showDocument("https://www.imdb.com/"+title.select("td:nth-of-type(2) a").attr("href")));
+                        gridPane.addRow(i++,image, link);
+
                     }
+
+                    lblProgress.setText("Done. Found " + titles.size() + " results");
+
 
                 }catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
             }
         });
-        Scene scene = new Scene(root, 1600 , 900);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("First javaFX Application");
+
+       btnSave.setOnAction(actionEvent -> getHostServices().showDocument("https://www.imdb.com/"));
+
+       Scene scene = new Scene(root, 1600 , 900);
+       primaryStage.setScene(scene);
+       primaryStage.setTitle("First javaFX Application");
         primaryStage.show();
    }
 
