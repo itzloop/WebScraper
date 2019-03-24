@@ -18,13 +18,17 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
-import java.io.File;
-import java.io.FileWriter;
+import javax.imageio.ImageIO;
+import java.io.*;
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Formatter;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 
 public class Main extends Application {
     public static String searchWord;
+    static ArrayList<Image> images;
     @Override
    public void start(Stage primaryStage)throws Exception
    {
@@ -57,7 +61,7 @@ public class Main extends Application {
        root.setBottom(toolBar);
 
 
-
+       //setting up events
        txtSearchWord.setOnKeyTyped(new EventHandler<KeyEvent>() {
            @Override
            public void handle(KeyEvent keyEvent) {
@@ -94,7 +98,7 @@ public class Main extends Application {
 
 
                 }catch (Exception e) {
-                    System.out.println(e.getMessage());
+                    System.out.println(e);
                 }
             }
         });
@@ -105,37 +109,77 @@ public class Main extends Application {
            @Override
            public void handle(ActionEvent actionEvent) {
 
-               for (Node node : savedResults.getChildren() ) {
-                   if(node instanceof Hyperlink && ((Hyperlink) node).getText() == searchWord);
-                        break;
-               }
-               try {
-                   FileWriter myWriter= new FileWriter("output.txt");
-                   myWriter.write(searchWord);
-                   myWriter.close();
-               }catch (Exception e)
+               if(!exists())
                {
-                   System.out.println("Sth Hpnd");
+                   save();
+                   Hyperlink saveLink = new Hyperlink(searchWord);
+                   saveLink.setOnAction(actionEvent1 -> System.out.println("Hello"));
+                   savedResults.getChildren().add(saveLink);
+                   btnSave.setDisable(true);
                }
-               Hyperlink saveLink = new Hyperlink(searchWord);
-               saveLink.setOnAction(actionEvent1 -> System.out.println("Hello"));
-               savedResults.getChildren().add(saveLink);
-               btnSave.setDisable(true);
+               else
+                   System.out.println("Search result exists");
 
            }
        });
 
        Scene scene = new Scene(root, 1600 , 900);
        primaryStage.setScene(scene);
-       primaryStage.setTitle("First javaFX Application");
+       primaryStage.setTitle("IMDB");
        primaryStage.show();
    }
 
-    private static Scanner scanner;
+     void save()
+    {
+        try {
+                FileWriter fr = new FileWriter("log.txt", true);
+                BufferedWriter br = new BufferedWriter(fr);
+                PrintWriter pr = new PrintWriter(br);
+                pr.println(searchWord);
+                pr.close();
+                br.close();
+                fr.close();
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    boolean exists(){
+        try {
+            FileReader f = new FileReader("log.txt");
+            int i;
+            ArrayList<String> strings = new ArrayList<>();
+            String s = "";
+            while((i = f.read()) != -1)
+            {
+                if((char)i == '\n'){
+                    strings.add(s);
+                    s = "";
+                }
+                s+= (char)i;
+
+
+            }
+            for (String str : strings) {
+                if(str.trim().equals(searchWord))
+                    return true;
+                else
+                    return false;
+
+            }
+
+        }catch (Exception e){
+            System.out.println(e);
+            return false;
+        }
+        return false;
+    }
 
     public static void main(String[] args) {
+
         launch(args);
-        scanner = new Scanner(System.in);
 
     }
 }
+
+
