@@ -3,5 +3,6 @@ module WebScraper {
     requires javafx.controls;
     requires org.jsoup;
     requires java.desktop;
+    requires javafx.swing;
     opens sample;
 }
