@@ -8,6 +8,7 @@ public class Film {
     private final Image image;
 
 
+
     Film(String title , String URL , Image image)
     {
         this.title = title;
@@ -26,4 +27,6 @@ public class Film {
     public Image getImage() {
         return image;
     }
+
+
 }

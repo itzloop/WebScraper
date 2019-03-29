@@ -2,10 +2,6 @@ package sample;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
-import javafx.embed.swing.SwingFXUtils;
-import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
@@ -13,14 +9,9 @@ import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
-
-public abstract class Views extends Application{
+public class Views extends Application{
 
     private Films films;
     private String title;
@@ -40,12 +31,16 @@ public abstract class Views extends Application{
     private BorderPane root;
     private Stage primaryStage;
 
+
+
+
     Views(String title)
     {
         this(1600 , 900 , title);
     }
 
     Views(double WINDOW_WIDTH, double WINDOW_HEIGHT , String title){
+        films = new Films("");
         searchProgressBar = new ProgressBar();
         btnSearch = new Button("Search");
         btnSave = new Button("Save");
@@ -65,6 +60,11 @@ public abstract class Views extends Application{
         this.WINDOW_HEIGHT = WINDOW_HEIGHT;
     }
 
+    @Override
+    public void start(Stage stage) throws Exception {
+
+    }
+
     void handelEvents()
     {
         loadSavedResults();
@@ -78,25 +78,21 @@ public abstract class Views extends Application{
 
             }
         });
-
-
-
         btnSearch.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
+                if(films.getSearchWord().trim().equals(txtSearchWord.getText().trim().toLowerCase()))
+                {
+                    alert(Alert.AlertType.WARNING , "You haven't changed your search word" , "Warning");
+                    return;
+                }
 
-//
-//                if(searchWord.trim().equals(txtSearchWord.getText().trim().toLowerCase()))
-//                {
-//                    alert(Alert.AlertType.WARNING , "You haven't changed your search word" , "Warning");
-//                    return;
-//                }
-
-                films = new Films(txtSearchWord.getText());
-                if(exists(films.getSearchWord())){
+                films = new Films(txtSearchWord.getText().trim().toLowerCase());
+                if(films.exists(txtSearchWord.getText().trim().toLowerCase())){
                     alert(Alert.AlertType.WARNING , "Search result exists" , "Warning");
                     return;
                 }
+                rightPanel.getChildren().clear();
                 controlsDisabled(true);
                 leftPanel.getChildren().clear();
                 films.loadDataFromIMDB();
@@ -115,6 +111,8 @@ public abstract class Views extends Application{
                                 {
                                     controlsDisabled(false);
                                     loadSavedResults();
+                                    alert(Alert.AlertType.INFORMATION , "Found " + films.size() + " results","Information");
+                                    searchProgressBar.setProgress(-1.d);
                                 }
                             }
                         }
@@ -127,33 +125,25 @@ public abstract class Views extends Application{
             }
         });
 
-
-
-
         btnSave.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
 
-                if(!exists(films.getSearchWord()))
+                if(!films.exists(txtSearchWord.getText().trim()))
                 {
-                    if(save(films)){
+                    if(films.save()){
                         loadSavedResults();
                         btnSave.setDisable(true);
                         alert(Alert.AlertType.INFORMATION , "Saved Successfully." , "Information");
                     }
                     else
                         alert(Alert.AlertType.WARNING , "Didn't Saved it." , "Warning");
-
-
                 }
                 else
                     alert(Alert.AlertType.WARNING , "Search result exists." , "Warning");
 
             }
         });
-
-
-
         primaryStage.widthProperty().addListener( (observableValue, number, t1) -> {
             WINDOW_WIDTH = (double)t1;
             txtSearchWord.setPrefSize(WINDOW_WIDTH/4 , toolBar.getHeight());
@@ -164,50 +154,7 @@ public abstract class Views extends Application{
             rightPanelScrollPane.setPrefWidth(WINDOW_WIDTH/4);
 
         });
-
-
     }
-
-
-
-    private boolean save(Films films )
-    {
-        try{
-            //creating the Folder structure for the current searchWord that we want to save
-            File f = new File("Resources/"+films.getSearchWord());
-            File imageFolder= new File(f.getPath() + "/Images");
-            f.mkdirs();
-            imageFolder.mkdirs();
-            File imageFile;
-            BufferedImage bImage;
-            File result = new File(f.getPath() + "/result.txt");
-            FileWriter fr = new FileWriter(result, true);
-            BufferedWriter br = new BufferedWriter(fr);
-            PrintWriter pr = new PrintWriter(br);
-
-            int i = 1;
-            for (Film film: films) {
-                imageFile = new File(imageFolder.getPath()+ "/" + i++ + ".jpg");
-                bImage = SwingFXUtils.fromFXImage(film.getImage() , null);
-                ImageIO.write(bImage , "jpg" , imageFile);
-                pr.println(film.getTitle() +"$"+ film.getURL() +"$");
-            }
-
-            pr.flush();
-            pr.close();
-            br.close();
-            fr.close();
-            return true;
-
-
-        }catch (Exception e ){
-            System.out.println(e);
-        }
-        return false;
-    }
-
-
-
 
     /**
      * show to the searched word to the right side panel
@@ -215,7 +162,7 @@ public abstract class Views extends Application{
     private void loadSavedResults()
     {
         rightPanel.getChildren().clear();
-        for(String str : getWords())
+        for(String str : films.history())
         {
             Hyperlink h = new Hyperlink(str);
             h.setOnAction(actionEvent -> loadData(str));
@@ -229,86 +176,23 @@ public abstract class Views extends Application{
     private void loadData(String searchKey)
     {
 
+        films = new Films(searchKey);
         leftPanel.getChildren().clear();
         try {
-            String[] eachLink = new String[2];
             ImageView imageView;
-            Hyperlink link ;
-            eachLink[0] = "";
-            eachLink[1] = "";
-            File f = new File("Resources/"+searchKey+"/result.txt");
-            FileReader fr = new FileReader(f);
-            BufferedReader fbr = new BufferedReader(fr);
-            int i , j = 0 , counter = 0 , imageCounter = 1;
-            while(( i = fbr.read()) != -1)
-            {
-
-                if(j > 1)
-                {
-                    final Image image = new Image("file:Resources/"+ searchKey+"/Images/" + imageCounter+".jpg"   );
-                    imageCounter++;
-                    imageView = new ImageView(image);
-                    final String URL= eachLink[1];
-                    link = new Hyperlink(eachLink[0]);
-                    link.setOnAction(actionEvent -> getHostServices().showDocument(URL));
-                    leftPanel.addRow((counter)++ ,imageView, link);
-                    eachLink = new String[2];
-                    eachLink[0] = "";
-                    eachLink[1] = "";
-                    j = 0;
-                }
-                if((char)i == '$')
-                    j++;
-                else
-                    eachLink[j] += (char)i;
-
+            Hyperlink title ;
+            int row = 0;
+            films.loadLocalData();
+            for (Film film :films) {
+                title = new Hyperlink(film.getTitle());
+                title.setOnAction(actionEvent -> getHostServices().showDocument(film.getURL()));
+                imageView = new ImageView(film.getImage());
+                leftPanel.addRow(row++ , imageView , title);
             }
-
-            fbr.close();
-            fr.close();
             txtSearchWord.setText(searchKey);
-
-
         }catch (Exception e) {
             System.out.println(e);
         }
-
-    }
-
-
-
-    /**
-     * this will return all the words the user searched for
-     *
-     * */
-    private String[] getWords()
-    {
-        File f = new File("Resources/");
-        return f.list();
-    }
-
-
-
-    /**
-     * this method will check if we have searched for a word before or not
-     *
-     * */
-
-
-    private boolean exists(String searchWord) {
-
-        try{
-            File f = new File("Resources");
-            String[] dirs = f.list();
-            for (String dir: dirs) {
-                if(dir.equals(searchWord))
-                    return true;
-            }
-        }catch (Exception e ){
-            System.out.println(e);
-        }
-        return false;
-
     }
 
     /**
@@ -322,7 +206,8 @@ public abstract class Views extends Application{
         btnSearch.setDisable(isDisabled);
     }
 
-
+    /**
+     * Show Message Dialogs*/
     private void alert(Alert.AlertType type , String contentText , String title)
     {
         Alert alert = new Alert(type);
@@ -331,7 +216,6 @@ public abstract class Views extends Application{
         alert.setContentText(contentText);
         alert.showAndWait();
     }
-
 
     void manageViews(Stage primaryStage)
     {
@@ -343,6 +227,7 @@ public abstract class Views extends Application{
         Scene scene = new Scene(root , WINDOW_WIDTH , WINDOW_HEIGHT);
         primaryStage.setScene(scene);
         primaryStage.setTitle(title);
+        primaryStage.show();
     }
 
 }
