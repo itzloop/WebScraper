@@ -30,7 +30,7 @@ public class Films extends ArrayList<Film> {
             while (films.get(count).getDocument() == null){
                 try {
                     films.get(count).setDocument(Jsoup.connect(films.get(count).getURL()).get());
-                    System.out.println(count);
+                    //System.out.println(count);
                 }catch (Exception e)
                 {
                     System.out.println(e);
@@ -49,7 +49,7 @@ public class Films extends ArrayList<Film> {
     public String getSearchWord() {
         return searchWord;
     }
-
+    //TODO Just Load The Data TO Viewa and then we're done
     public void loadDataFromIMDB()
     {
         try {
@@ -66,6 +66,33 @@ public class Films extends ArrayList<Film> {
 
                 executor.execute(new Worker(i , this));
             }
+
+            Document tempdoc = Jsoup.connect("https://www.imdb.com/title/tt0241527/videoplayer/vi3944653593?ref_=tt_pv_vi_aiv_1").get();
+           // System.out.println(tempdoc.select(".video-player__playlist-header-index").text().split("of ")[1]);
+            String s =tempdoc.select("script").get(6) + "";
+
+            s=s.split("videoMetadata")[1];
+            s=s.split("</script>")[0];
+            Trailers t = new Trailers();
+            t.LoadTrailer(s);
+            this.get(3).setTrailers(t);
+            System.out.println(this.get(3).getTrailers().get(0).getEncodings().get(1).getDefinition());
+
+            //            for (int i = 0; i < this.get(0).getTrailers().size(); i++) {
+//                System.out.println(this.get(3).getTrailers().get(i).getEncodings().get(0).getVideoUrl());
+//            }
+            //System.out.println(s);
+        //            Trailers t = new Trailers();
+//            t.LoadTrailer(s);
+//            for (int i = 0; i <this.get(0).getTrailers().size(); i++) {
+//
+//                System.out.println(this.get(3).getTrailers().get(i).getEncodings().get(0).getVideoUrl());
+//            }
+            //            String temp;
+//
+//            temp = s.split("\"encodings\":\\[")[1].split("],")[0];
+//            temp = temp.split("},")[0];
+//            System.out.println(s);
             executor.shutdown();
         }catch (Exception e) {
             System.out.println(e);
@@ -104,7 +131,7 @@ public class Films extends ArrayList<Film> {
 
 
         }catch (Exception e ){
-            System.out.println(e);
+            System.out.println(e.getStackTrace());
         }
         return false;
     }

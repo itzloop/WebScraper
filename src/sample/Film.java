@@ -8,7 +8,15 @@ public class Film {
     private final String URL;
     private final Image image;
     private Document document;
+    private Trailers trailers;
 
+    public void setTrailers(Trailers trailers) {
+        this.trailers = trailers;
+    }
+
+    public Trailers getTrailers() {
+        return trailers;
+    }
 
     Film(String title , String URL , Image image)
     {
