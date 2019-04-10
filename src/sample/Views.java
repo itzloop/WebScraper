@@ -10,6 +10,9 @@ import javafx.scene.Scene;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.image.ImageView;
+import javafx.stage.WindowEvent;
+
+import java.io.File;
 
 public class Views extends Application{
 
@@ -58,6 +61,13 @@ public class Views extends Application{
         this.title = title;
         this.WINDOW_WIDTH = WINDOW_WIDTH;
         this.WINDOW_HEIGHT = WINDOW_HEIGHT;
+
+        txtSearchWord.setPrefSize(WINDOW_WIDTH/4 , toolBar.getHeight());
+        btnSearch.setPrefSize(WINDOW_WIDTH/12 , toolBar.getHeight());
+        btnSave.setPrefSize(WINDOW_WIDTH/12 , toolBar.getHeight());
+        searchProgressBar.setPrefSize(WINDOW_WIDTH - (WINDOW_WIDTH/6 + WINDOW_WIDTH/4),toolBar.getHeight());
+        leftPanelScrollPane.setPrefWidth((3*WINDOW_WIDTH)/4);
+        rightPanelScrollPane.setPrefWidth(WINDOW_WIDTH/4);
     }
 
     @Override
@@ -118,9 +128,18 @@ public class Views extends Application{
                         }
                     });
                     title = new Hyperlink(film.getTitle());
-                    title.setOnAction(actionEvent1 -> getHostServices().showDocument(film.getURL()));
+                    title.setOnAction(actionEvent1 -> {
+                        try {
+                            System.out.println(film.getDocument().select(".summary_text").text());
+                        }catch (Exception e)
+                        {
+                            System.out.println(e.getStackTrace());
+                            alert(Alert.AlertType.WARNING , "Still Loading..." , "Information");
+                        }
+                    });
                     imageView = new ImageView(film.getImage());
                     leftPanel.addRow(row++ , imageView , title);
+                    //getHostServices().showDocument(film.getURL())
                 }
             }
         });
@@ -154,6 +173,13 @@ public class Views extends Application{
             rightPanelScrollPane.setPrefWidth(WINDOW_WIDTH/4);
 
         });
+
+
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            public void handle(WindowEvent we) {
+                Runtime.getRuntime().exit(1);
+            }
+        });
     }
 
     /**
@@ -161,12 +187,21 @@ public class Views extends Application{
      * */
     private void loadSavedResults()
     {
-        rightPanel.getChildren().clear();
-        for(String str : films.history())
+        File f = new File("Resources/");
+        if(!f.exists())
+            f.mkdirs();
+        try {
+            if(!rightPanel.getChildren().isEmpty())
+                rightPanel.getChildren().clear();
+            for(String str : films.history())
+            {
+                Hyperlink h = new Hyperlink(str);
+                h.setOnAction(actionEvent -> loadData(str));
+                rightPanel.getChildren().add(h);
+            }
+        }catch (Exception e)
         {
-            Hyperlink h = new Hyperlink(str);
-            h.setOnAction(actionEvent -> loadData(str));
-            rightPanel.getChildren().add(h);
+            System.out.println(e);
         }
     }
 
@@ -228,6 +263,7 @@ public class Views extends Application{
         primaryStage.setScene(scene);
         primaryStage.setTitle(title);
         primaryStage.show();
+
     }
 
 }

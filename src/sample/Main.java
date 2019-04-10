@@ -11,10 +11,10 @@ public class Main extends Application {
        Views v = new Views("IMDB");
        v.manageViews(primaryStage);
        v.handelEvents();
+
    }
 
     public static void main(String[] args) {
-
        launch(args);
     }
 }

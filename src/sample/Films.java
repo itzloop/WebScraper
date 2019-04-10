@@ -10,8 +10,34 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.concurrent.*;
 
 public class Films extends ArrayList<Film> {
+
+
+    class Worker implements Runnable
+    {
+        private int count;
+        private Films films;
+        Worker(int count , Films films)
+        {
+            this.count = count;
+            this.films = films;
+        }
+
+        @Override
+        public void run() {
+            while (films.get(count).getDocument() == null){
+                try {
+                    films.get(count).setDocument(Jsoup.connect(films.get(count).getURL()).get());
+                    System.out.println(count);
+                }catch (Exception e)
+                {
+                    System.out.println(e);
+                }
+            }
+        }
+    }
 
 
     private String searchWord;
@@ -34,6 +60,13 @@ public class Films extends ArrayList<Film> {
                                 "https://www.imdb.com/"+ e.select("td:nth-of-type(2) a").attr("href"),
                                     new Image(e.select("td:nth-of-type(1) img").attr("src") , true)));
             }
+
+            ExecutorService executor = Executors.newFixedThreadPool(10);
+            for (int i = 0; i < this.size(); i++) {
+
+                executor.execute(new Worker(i , this));
+            }
+            executor.shutdown();
         }catch (Exception e) {
             System.out.println(e);
         }
