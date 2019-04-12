@@ -11,8 +11,31 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.concurrent.*;
+import com.google.gson.Gson;
 
 public class Films extends ArrayList<Film> {
+
+    class checkWorker implements Runnable
+    {
+        private ArrayList<Future<?>> futures;
+        checkWorker(ArrayList<Future<?>> futures)
+        {
+            this.futures = futures;
+        }
+
+        @Override
+        public void run() {
+            boolean allDone = true;
+            while (!allDone)
+            {
+                for(Future<?> future : futures){
+                    allDone &= future.isDone();
+                }
+                System.out.println(allDone);
+            }
+            System.out.println(allDone);
+        }
+    }
 
 
     class Worker implements Runnable
@@ -30,9 +53,25 @@ public class Films extends ArrayList<Film> {
             while (films.get(count).getDocument() == null){
                 try {
                     films.get(count).setDocument(Jsoup.connect(films.get(count).getURL()).get());
-                    //System.out.println(count);
+                    // System.out.println(tempdoc.select(".video-player__playlist-header-index").text().split("of ")[1]);
+                      String link ="https://www.imdb.com"+ films.get(count).getDocument().select("#titleVideoStrip .video-modal:nth-of-type(1)").attr("href");
+                    if(!link.equals("https://www.imdb.com"))
+                    {
+                        String s = Jsoup.connect(link).get().select("script").get(6) + "";
+                        s=s.split("videoMetadata")[1];
+                        s=s.split("</script>")[0];
+                        Trailers t = new Trailers(films.get(count).getTitle());
+                        t.LoadTrailer(s);
+                        t.setName(films.get(count).getTitle());
+                        films.get(count).setTrailers(t);
+                    }
+                    System.out.println(count);
+
+
+
                 }catch (Exception e)
                 {
+
                     System.out.println(e);
                 }
             }
@@ -60,40 +99,18 @@ public class Films extends ArrayList<Film> {
                                 "https://www.imdb.com/"+ e.select("td:nth-of-type(2) a").attr("href"),
                                     new Image(e.select("td:nth-of-type(1) img").attr("src") , true)));
             }
-
+            ArrayList<Future<?>> futures = new ArrayList<Future<?>>();
             ExecutorService executor = Executors.newFixedThreadPool(10);
             for (int i = 0; i < this.size(); i++) {
 
                 executor.execute(new Worker(i , this));
+                Runnable worker = new Worker(i,this);
+                Future<?> f = executor.submit(worker);
+                futures.add(f);
             }
-
-            Document tempdoc = Jsoup.connect("https://www.imdb.com/title/tt0241527/videoplayer/vi3944653593?ref_=tt_pv_vi_aiv_1").get();
-           // System.out.println(tempdoc.select(".video-player__playlist-header-index").text().split("of ")[1]);
-            String s =tempdoc.select("script").get(6) + "";
-
-            s=s.split("videoMetadata")[1];
-            s=s.split("</script>")[0];
-            Trailers t = new Trailers();
-            t.LoadTrailer(s);
-            this.get(3).setTrailers(t);
-            System.out.println(this.get(3).getTrailers().get(0).getEncodings().get(1).getDefinition());
-
-            //            for (int i = 0; i < this.get(0).getTrailers().size(); i++) {
-//                System.out.println(this.get(3).getTrailers().get(i).getEncodings().get(0).getVideoUrl());
-//            }
-            //System.out.println(s);
-        //            Trailers t = new Trailers();
-//            t.LoadTrailer(s);
-//            for (int i = 0; i <this.get(0).getTrailers().size(); i++) {
-//
-//                System.out.println(this.get(3).getTrailers().get(i).getEncodings().get(0).getVideoUrl());
-//            }
-            //            String temp;
-//
-//            temp = s.split("\"encodings\":\\[")[1].split("],")[0];
-//            temp = temp.split("},")[0];
-//            System.out.println(s);
             executor.shutdown();
+            //new Thread(new checkWorker(futures)).start();
+//
         }catch (Exception e) {
             System.out.println(e);
         }
@@ -103,11 +120,14 @@ public class Films extends ArrayList<Film> {
     public boolean save()
     {
         try{
+
             //creating the Folder structure for the current searchWord that we want to save
             File f = new File("Resources/"+this.getSearchWord());
             File imageFolder= new File(f.getPath() + "/Images");
+            File trailersFolder = new File(f.getPath()+"/Trailers");
             f.mkdirs();
             imageFolder.mkdirs();
+            trailersFolder.mkdirs();
             File imageFile;
             BufferedImage bImage;
             File result = new File(f.getPath() + "/result.txt");
@@ -115,23 +135,46 @@ public class Films extends ArrayList<Film> {
             BufferedWriter br = new BufferedWriter(fr);
             PrintWriter pr = new PrintWriter(br);
 
-            int i = 1;
+
+            Gson gson = new Gson();
+            int i = 1 , j = 1;
+            ArrayList<Trailers> allTrailers = new ArrayList<>();
             for (Film film: this) {
                 imageFile = new File(imageFolder.getPath()+ "/" + i++ + ".jpg");
                 bImage = SwingFXUtils.fromFXImage(film.getImage() , null);
                 ImageIO.write(bImage , "jpg" , imageFile);
                 pr.println(film.getTitle() +"$"+ film.getURL() +"$");
-            }
+               try {
 
+                   if(!film.getTrailers().isEmpty())
+                       allTrailers.add(film.getTrailers());
+
+               }catch (Exception e)
+               {
+                   e.printStackTrace();
+                   continue;
+               }
+            }
             pr.flush();
             pr.close();
             br.close();
             fr.close();
+            System.out.println(gson.toJson(allTrailers));
+            File trailer = new File(trailersFolder.getPath() + "/" + "trailers.json");
+            fr = new FileWriter(trailer, true);
+            br = new BufferedWriter(fr);
+            pr = new PrintWriter(br);
+            pr.print(gson.toJson(allTrailers));
+            pr.flush();
+            pr.close();
+            br.close();
+            fr.close();
+
             return true;
 
 
         }catch (Exception e ){
-            System.out.println(e.getStackTrace());
+            System.out.println(e);
         }
         return false;
     }

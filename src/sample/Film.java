@@ -24,6 +24,7 @@ public class Film {
         this.URL = URL;
         this.image = image;
         this.document = null;
+        this.trailers = new Trailers(this.title);
     }
 
     public Document getDocument() {
