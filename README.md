@@ -1,4 +1,4 @@
-<------------ Description ------------>
+# Description
 This app gets all the titles from IMDB's search page.
 There are 3 classes beside Main Class called Views, Film and Films.
 Views is everything related to layouts and controls such as buttons and text fields.
