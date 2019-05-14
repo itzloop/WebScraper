@@ -1,4 +1,4 @@
-<------------ Description ------------>
+#description
 This app gets all the titles from IMDB's search page.
 There are 3 classes beside Main Class called Views, Film and Films.
 Views is everything related to layouts and controls such as buttons and text fields.
@@ -6,7 +6,7 @@ Film is each item in IMBD's search page which has a title a link to the page and
 Films is an ArrayList of Film which contains all the items in IMBD's Page and has the 
 functionality to load and save the data user has searched for.
 
-<------------ IDE ------------>
+##IDE
 
 IntelliJ IDEA 2018.3.5 (Ultimate Edition)
 Build #IU-183.5912.21, built on February 26, 2019
@@ -17,12 +17,12 @@ JRE: 1.8.0_152-release-1343-b28 amd64
 JVM: OpenJDK 64-Bit Server VM by JetBrains s.r.o
 Linux 4.18.0-16-generic
 
-<------------ Libaries ------------>
+##Libaries
 
 jsoup-1.11.3
 javafx-sdk-11.0.2
 
-<------------ Command ------------>
+##Command
 
 *For the following command to work provide the path inside {}
  
